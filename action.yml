@@ -1,0 +1,21 @@
+name: Delete AWS Route53 Records
+description: Ensures DNS records are deleted in a given AWS Route53 domain
+
+branding:
+  icon: activity
+  color: red
+
+inputs:
+  hosted-zone-id:
+    description: The ID of the hosted zone that contains the resource record sets that you want to change.
+    required: true
+  records:
+    description: The list of records to be deleted
+    required: true
+  comment:
+    description: An optional comment that describes the purpose of the changes
+    required: false
+
+runs:
+  using: node12
+  main: index.js
