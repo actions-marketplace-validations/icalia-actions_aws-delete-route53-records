@@ -1,5 +1,6 @@
 name: Delete AWS Route53 Records
 description: Ensures DNS records are deleted in a given AWS Route53 domain
+author: Icalia Labs
 
 branding:
   icon: activity
