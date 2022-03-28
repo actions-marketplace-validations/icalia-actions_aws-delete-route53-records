@@ -24,14 +24,13 @@
   // Docker Compose configuration. The order of the array matters since the
   // contents of later files can override values set in previous ones.
   "dockerComposeFile": [
-    "../docker-compose.yml", // The compose file with the common services
-    "vs-compose.yml"     // Special for the VSCode dev container
+    "docker-compose.yml", // The compose file with the common services
   ],
 
   // Required. The name of the service VS Code should connect to once running.
-  "service": "lib",
+  "service": "development",
 
-  "workspaceFolder": "${localWorkspaceFolder}",
+  "workspaceFolder": "/workspaces/aws-delete-route53-records",
 
   // An array of extension IDs that specify the extensions to install inside the
   // container when you first attach to it.

@@ -1,6 +1,8 @@
 # Stage I: Runtime  ============================================================
 FROM node:erbium-buster-slim AS runtime
 
+WORKDIR /workspaces/aws-delete-route53-records
+
 RUN echo 'APT::Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -8,14 +10,12 @@ RUN echo 'APT::Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries \
     curl \
  && rm -rf /var/lib/apt/lists/*
 
+
 # Stage II: Testing  ===========================================================
 FROM runtime AS testing
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git
-
-# Receive the APP_PATH argument:
-ARG APP_PATH=/icalia-actions/aws-delete-route53-records
 
 # Receive the developer user's UID and USER:
 ARG DEVELOPER_UID=1000
@@ -26,29 +26,27 @@ RUN id ${DEVELOPER_UID} \
  || useradd -r -m -u ${DEVELOPER_UID} \
     --shell /bin/bash -c "Developer User,,," ${DEVELOPER_USERNAME}
 
-# Ensure the developer user's home directory and APP_PATH are owned by him/her:
+# Ensure the developer user's home directory and workspace are owned by him/her:
 # (A workaround to a side effect of setting WORKDIR before creating the user)
-RUN mkdir -p ${APP_PATH} && chown -R ${DEVELOPER_UID}:node ${APP_PATH}
+RUN mkdir -p /workspaces/aws-delete-route53-records \
+ && chown -R ${DEVELOPER_UID}:node /workspaces/aws-delete-route53-records
 
 # Add the project's executable path to the system PATH:
-ENV PATH=${APP_PATH}/bin:$PATH
+ENV PATH=/workspaces/aws-delete-route53-records/bin:$PATH
 
 # Configure the app dir as the working dir:
-WORKDIR ${APP_PATH}
+WORKDIR /workspaces/aws-delete-route53-records
 
 # Switch to the developer user:
 USER ${DEVELOPER_UID}
 
 # Copy and install the project dependency lists into the container image:
-COPY --chown=${DEVELOPER_UID} package.json yarn.lock ${APP_PATH}/
+COPY --chown=${DEVELOPER_UID} package.json yarn.lock /workspaces/aws-delete-route53-records/
 RUN yarn install
-ENV PATH=${APP_PATH}/node_modules/.bin:$PATH
+ENV PATH=/workspaces/aws-delete-route53-records/node_modules/.bin:$PATH
 
 # Stage III: Development =======================================================
 FROM testing AS development
-
-# Receive the APP_PATH argument:
-ARG APP_PATH=/icalia-actions/aws-delete-route53-records
 
 # Receive the developer user's UID and USER:
 ARG DEVELOPER_UID=1000
@@ -103,16 +101,13 @@ RUN mkdir -p ~/.vscode-server/extensions ~/.vscode-server-insiders/extensions
 # Stage IV: Builder ============================================================
 FROM testing AS builder
 
-ARG APP_PATH=/icalia-actions/aws-delete-route53-records
 ARG DEVELOPER_UID=1000
 
-COPY --chown=${DEVELOPER_UID} . ${APP_PATH}/
+COPY --chown=${DEVELOPER_UID} . /workspaces/aws-delete-route53-records/
 RUN yarn build
 
 RUN rm -rf .env .npmignore __test__ action.yml bin ci-compose.yml coverage src tsconfig.json yarn.lock tmp
 
 # Stage V: Release =============================================================
 FROM runtime AS release
-ARG APP_PATH=/icalia-actions/aws-delete-route53-records
-COPY --from=builder --chown=node:node ${APP_PATH} /icalia-actions/aws-delete-route53-records
-WORKDIR /icalia-actions/aws-delete-route53-records
+COPY --from=builder --chown=node:node /workspaces/aws-delete-route53-records /workspaces/aws-delete-route53-records
